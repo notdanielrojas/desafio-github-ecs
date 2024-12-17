@@ -36,15 +36,15 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build -t ${{ secrets.ECR_REPOSITORY }}:$GITHUB_SHA .
+          docker build -t ${{ secrets.ECR_REPOSITORY_NAME }}:$GITHUB_SHA .
 
       - name: Push Docker image to ECR
         run: |
-          docker push ${{ secrets.ECR_REPOSITORY }}:$GITHUB_SHA
+          docker push ${{ secrets.ECR_REPOSITORY_NAME }}:$GITHUB_SHA
 
       - name: Deploy to ECS
         run: |
           ecs-deploy \
-            --cluster ${{ secrets.ECS_CLUSTER }} \
+            --cluster ${{ secrets.ECS_CLUSTER_NAME }} \
             --service-name ${{ secrets.ECS_SERVICE_NAME }} \
-            --image ${{ secrets.ECR_REPOSITORY }}:$GITHUB_SHA \
+            --image ${{ secrets.ECR_REPOSITORY_NAME }}:$GITHUB_SHA \
