@@ -46,4 +46,5 @@ jobs:
           ecs-deploy \
             --cluster ${{ secrets.ECS_CLUSTER }} \
             --service-name ${{ secrets.ECS_SERVICE_NAME }} \
-            --image ${{ secrets.ECR_REPOSITORY }}:$GITHUB_SHA
+            --image ${{ secrets.ECR_REPOSITORY }}:$GITHUB_SHA \
+            --token ${{ env.MY_TOKEN }} 
