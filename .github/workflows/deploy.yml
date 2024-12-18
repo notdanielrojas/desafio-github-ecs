@@ -31,15 +31,13 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-buildx-
 
-      - name: Log in to Amazon ECR
-        uses: aws-actions/amazon-ecr-login@v1
-
       - name: Build Docker image
         run: |
           docker build -t ${{ secrets.ECR_REPOSITORY_NAME }}:$GITHUB_SHA .
 
       - name: Push Docker image to ECR
         run: |
+          echo ${{ secrets.AWS_ACCESS_KEY_ID }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
           docker push ${{ secrets.ECR_REPOSITORY_NAME }}:$GITHUB_SHA
 
       - name: Deploy to ECS
