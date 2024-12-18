@@ -46,6 +46,8 @@ jobs:
       - name: Deploy to ECS
         run: |
           ecs-deploy \
+            --region ${{ secrets.AWS_REGION }} \
             --cluster ${{ secrets.ECS_CLUSTER_NAME }} \
-            --service-name ${{ secrets.ECS_SERVICE_NAME }} \
-            --image ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY_NAME }}:$GITHUB_SHA \
+            --service ${{ secrets.ECS_SERVICE_NAME }} \
+            --image ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY_NAME }} \
+            --tag $GITHUB_SHA
