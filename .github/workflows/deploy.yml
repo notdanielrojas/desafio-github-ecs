@@ -1,4 +1,4 @@
-name: Deploy to Amazon ECS
+name: Desplegar en Amazon ECS
 
 on:
   push:
@@ -6,24 +6,16 @@ on:
       - main
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
     steps:
-      - name: Check out code
+      - name: Checkout del código
         uses: actions/checkout@v3
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v3
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
-          aws-region: us-east-1
-
-      - name: Set up Docker Buildx
+      - name: Configurar Docker Buildx
         uses: docker/setup-buildx-action@v2
 
-      - name: Cache Docker layers
+      - name: Cache de capas Docker
         uses: actions/cache@v3
         with:
           path: /tmp/.buildx-cache
@@ -31,31 +23,22 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-buildx-
 
-      - name: Install ecs-deploy
-        run: npm install -g ecs-deploy
+      - name: Iniciar sesión en Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Build Docker image
+      - name: Construir imagen Docker
         run: |
-          docker build -t ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY_NAME }}:$GITHUB_SHA .
+          docker build -t ${{ secrets.ECR_REPOSITORY }}:$GITHUB_SHA .
 
-      - name: Push Docker image to ECR
+      - name: Subir imagen Docker a ECR
         run: |
-          aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
-          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY_NAME }}:$GITHUB_SHA
+          docker push ${{ secrets.ECR_REPOSITORY }}:$GITHUB_SHA
 
-      - name: Deploy to ECS
-        run: |
-          ecs-deploy \
-            --region ${{ secrets.AWS_REGION }} \
-            --cluster ${{ secrets.ECS_CLUSTER_NAME }} \
-            --service ${{ secrets.ECS_SERVICE_NAME }} \
-            --container ${{ secrets.ECS_CONTAINER_NAME }} \
-            --image ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY_NAME }} \
-            --tag $GITHUB_SHA
-        env: 
-          REGION: ${{ secrets.AWS_REGION }}
-          CLUSTER: ${{ secrets.ECS_CLUSTER_NAME }}
-          SERVICE: ${{ secrets.ECS_SERVICE_NAME }}
-          CONTAINER: ${{ secrets.ECS_CONTAINER_NAME }}
-          IMAGE: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY_NAME }}
-          IMAGE_TAG: $GITHUB_SHA
+      - name: Desplegar en ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ secrets.ECS_TASK_DEFINITION }}
+          service: ${{ secrets.ECS_SERVICE_NAME }}
+          cluster: ${{ secrets.ECS_CLUSTER }}
+          image: ${{ secrets.ECR_REPOSITORY }}:$GITHUB_SHA
+          region: ${{ secrets.AWS_REGION }}
