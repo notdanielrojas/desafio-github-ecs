@@ -37,11 +37,11 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build -t ${{ secrets.ECR_REPOSITORY_NAME }}:${{ github.sha }} .
+          docker build -t ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY_NAME }}:${{ github.sha }} .
 
       - name: Push Docker image to ECR
         run: |
-          docker push ${{ secrets.ECR_REPOSITORY_NAME }}:${{ github.sha }}
+          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY_NAME }}:${{ github.sha }}
 
       - name: Install ecspresso
         run: |
@@ -54,7 +54,7 @@ jobs:
           echo "cluster_name: ${{ secrets.ECS_CLUSTER_NAME }}" > ~/.ecspresso/ecspresso.yml
           echo "service_name: ${{ secrets.ECS_SERVICE_NAME }}" >> ~/.ecspresso/ecspresso.yml
           echo "region: ${{ vars.AWS_REGION }}" >> ~/.ecspresso/ecspresso.yml
-          echo "image: ${{ secrets.ECR_REPOSITORY_NAME }}:${{ github.sha }}" >> ~/.ecspresso/ecspresso.yml
+          echo "image: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY_NAME }}:${{ github.sha }}" >> ~/.ecspresso/ecspresso.yml
 
       - name: Deploy to ECS using ecspresso
         run: |
