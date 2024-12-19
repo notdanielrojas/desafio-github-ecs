@@ -51,11 +51,13 @@ jobs:
       - name: Initialize ecspresso configuration
         run: |
           mkdir -p ~/.ecspresso
-          echo "cluster_name: ${{ secrets.ECS_CLUSTER_NAME }}" > ~/.ecspresso/ecspresso.yml
-          echo "service_name: ${{ secrets.ECS_SERVICE_NAME }}" >> ~/.ecspresso/ecspresso.yml
-          echo "region: ${{ vars.AWS_REGION }}" >> ~/.ecspresso/ecspresso.yml
-          echo "image: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY_NAME }}:${{ github.sha }}" >> ~/.ecspresso/ecspresso.yml
+          cat << EOF > ~/.ecspresso/ecspresso.yml
+          cluster: ${{ secrets.ECS_CLUSTER_NAME }}
+          service: ${{ secrets.ECS_SERVICE_NAME }}
+          region: ${{ vars.AWS_REGION }}
+          image: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY_NAME }}:${{ github.sha }}
+          EOF
 
       - name: Deploy to ECS using ecspresso
         run: |
-         ecspresso deploy --config ~/.ecspresso/ecspresso.yml --force-new-deployment
+          ecspresso deploy --config ~/.ecspresso/ecspresso.yml --force-new-deployment
