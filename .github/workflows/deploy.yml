@@ -55,7 +55,7 @@ jobs:
           cluster: ${{ secrets.ECS_CLUSTER_NAME }}
           service: ${{ secrets.ECS_SERVICE_NAME }}
           region: ${{ vars.AWS_REGION }}
-          task_definition: ${{ secrets.ECS_TASK_DEFINITION_NAME }}
+          task_definition: ${{ secrets.ECS_TASK_DEFINITION_NAME }} 
           image: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY_NAME }}:${{ github.sha }}
           EOF
 
