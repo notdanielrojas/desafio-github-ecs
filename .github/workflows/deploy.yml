@@ -45,7 +45,7 @@ jobs:
 
       - name: Install ecspresso
         run: |
-          curl -L https://github.com/kayac/ecspresso/releases/download/v2.4.5/ecspresso_2.4.5_darwin_amd64.tar.gz -o ecspresso.tar.gz
+          curl -L https://github.com/kayac/ecspresso/releases/download/v2.4.5/ecspresso_2.4.5_darwin_arm64.tar.gz -o ecspresso.tar.gz
           tar xzf ecspresso.tar.gz
           sudo mv ecspresso /usr/local/bin/
 
