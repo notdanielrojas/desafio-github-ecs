@@ -58,4 +58,4 @@ jobs:
 
       - name: Deploy to ECS using ecspresso
         run: |
-          ecspresso deploy --force-new-deployment
+         ecspresso deploy --config ~/.ecspresso/ecspresso.yml --force-new-deployment
