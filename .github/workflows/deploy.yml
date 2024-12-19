@@ -45,7 +45,8 @@ jobs:
 
       - name: Install ecspresso
         run: |
-          curl -L https://github.com/kayac/ecspresso/releases/download/v2.4.5/ecspresso_2.4.5_linux_amd64.tar.gz | tar xz
+          curl -L https://github.com/kayac/ecspresso/releases/latest/download/ecspresso_linux_amd64.tar.gz -o ecspresso.tar.gz
+          tar xzf ecspresso.tar.gz
           sudo mv ecspresso /usr/local/bin/
 
       - name: Deploy to ECS using ecspresso
