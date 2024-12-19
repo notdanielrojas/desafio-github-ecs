@@ -17,7 +17,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }} 
           aws-region: ${{ vars.AWS_REGION }}
 
       - name: Set up Docker Buildx
@@ -45,22 +45,17 @@ jobs:
 
       - name: Install ecspresso
         run: |
-          curl -L https://github.com/kayac/ecspresso/releases/latest/download/ecspresso_linux_amd64.tar.gz | tar xz
+          curl -L https://github.com/kayac/ecspresso/releases/download/v2.4.5/ecspresso_2.4.5_linux_amd64.tar.gz | tar xz
           sudo mv ecspresso /usr/local/bin/
 
       - name: Initialize ecspresso configuration
         run: |
           mkdir -p ~/.ecspresso
-          cat << EOF > ~/.ecspresso/ecspresso.yml
-          cluster: ${{ secrets.ECS_CLUSTER_NAME }}
-          service: ${{ secrets.ECS_SERVICE_NAME }}
-          region: ${{ vars.AWS_REGION }}
-          EOF
+          echo "cluster_name: ${{ secrets.ECS_CLUSTER_NAME }}" > ~/.ecspresso/ecspresso.yml
+          echo "service_name: ${{ secrets.ECS_SERVICE_NAME }}" >> ~/.ecspresso/ecspresso.yml
+          echo "region: ${{ vars.AWS_REGION }}" >> ~/.ecspresso/ecspresso.yml
+          echo "image: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY_NAME }}:${{ github.sha }}" >> ~/.ecspresso/ecspresso.yml
 
       - name: Deploy to ECS using ecspresso
         run: |
-          ecspresso deploy \
-            --config ~/.ecspresso/ecspresso.yml \
-            --task-definition-path ${{ secrets.ECS_TASK_DEFINITION_PATH }} \
-            --image ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY_NAME }}:${{ github.sha }} \
-            --force-new-deployment
+          ecspresso deploy --force-new-deployment
