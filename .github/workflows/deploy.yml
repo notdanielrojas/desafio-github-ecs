@@ -17,7 +17,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }} 
           aws-region: ${{ vars.AWS_REGION }}
 
       - name: Set up Docker Buildx
@@ -31,15 +31,18 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-buildx-
 
-      - name: Login to Amazon ECR
-        run: aws ecr get-login-password --region ${{ vars.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com
+      - name: Log in to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
 
       - name: Build Docker image
         run: |
           docker build -t ${{ secrets.ECR_REPOSITORY_NAME }}:${{ github.sha }} .
+
       - name: Push Docker image to ECR
         run: |
           docker push ${{ secrets.ECR_REPOSITORY_NAME }}:${{ github.sha }}
+
       - name: Register new ECS Task Definition
         run: |
           aws ecs register-task-definition \
@@ -50,9 +53,17 @@ jobs:
                 "image": "${{ secrets.ECR_REPOSITORY_NAME }}:${{ github.sha }}",
                 "memory": 512,
                 "cpu": 256,
+                "portMappings": [
+                  {
+                    "containerPort": 80,
+                    "hostPort": 80,
+                    "protocol": "tcp"
+                  }
+                ],
                 "essential": true
               }
             ]'
+
       - name: Update ECS service with new Task Definition
         run: |
           aws ecs update-service \
