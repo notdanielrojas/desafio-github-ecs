@@ -20,6 +20,7 @@ jobs:
           aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }} 
           aws-region: ${{ vars.AWS_REGION }}
 
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -27,38 +28,36 @@ jobs:
         uses: actions/cache@v4
         with:
           path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-latest
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
           restore-keys: |
             ${{ runner.os }}-buildx-
-
       - name: Log in to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Build Docker image
         run: |
-          docker build -t ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY_NAME }}:${{ github.sha }} .
-
+          docker build -t ${{ secrets.ECR_REPOSITORY_NAME }}:${{ github.sha }} .
       - name: Push Docker image to ECR
         run: |
-          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY_NAME }}:${{ github.sha }}
-
-      - name: Install ecspresso
+          docker push ${{ secrets.ECR_REPOSITORY_NAME }}:${{ github.sha }}
+      - name: Register new ECS Task Definition
         run: |
-          curl -L https://github.com/kayac/ecspresso/releases/download/v2.4.5/ecspresso_2.4.5_darwin_arm64.tar.gz -o ecspresso.tar.gz
-          tar xzf ecspresso.tar.gz
-          sudo mv ecspresso /usr/local/bin/
-
-      - name: Initialize ecspresso configuration
+          aws ecs register-task-definition \
+            --family tarea-cursodevops \
+            --container-definitions '[
+              {
+                "name": "my-container",
+                "image": "${{ secrets.ECR_REPOSITORY_NAME }}:${{ github.sha }}",
+                "memory": 512,
+                "cpu": 256,
+                "essential": true
+              }
+            ]'
+      - name: Update ECS service with new Task Definition
         run: |
-          ecspresso init \
-            --region ${{ vars.AWS_REGION }} \
+          aws ecs update-service \
             --cluster ${{ secrets.ECS_CLUSTER_NAME }} \
             --service ${{ secrets.ECS_SERVICE_NAME }} \
-            --config ecspresso.yml
-
-      - name: Deploy to ECS using ecspresso
-        run: |
-          ecspresso deploy \
-            --config ecspresso.yml \
+            --task-definition ${{ secrets.ECS_TASK_DEFINITION_ARN }} \
             --force-new-deployment
