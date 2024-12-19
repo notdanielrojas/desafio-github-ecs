@@ -49,12 +49,16 @@ jobs:
           tar xzf ecspresso.tar.gz
           sudo mv ecspresso /usr/local/bin/
 
+      - name: Initialize ecspresso configuration
+        run: |
+          ecspresso init \
+            --region ${{ vars.AWS_REGION }} \
+            --cluster ${{ secrets.ECS_CLUSTER_NAME }} \
+            --service ${{ secrets.ECS_SERVICE_NAME }} \
+            --config ecspresso.yml
+
       - name: Deploy to ECS using ecspresso
         run: |
           ecspresso deploy \
-            --cluster ${{ secrets.ECS_CLUSTER_NAME }} \
-            --service ${{ secrets.ECS_SERVICE_NAME }} \
-            --region ${{ vars.AWS_REGION }} \
-            --task-definition-path ${{ secrets.ECS_TASK_DEFINITION_PATH }} \
-            --image ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY_NAME }}:${{ github.sha }} \
+            --config ecspresso.yml \
             --force-new-deployment
