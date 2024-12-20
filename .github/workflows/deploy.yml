@@ -48,7 +48,7 @@ jobs:
             --family task-desafio-github-ecs \
             --container-definitions '[
               {
-                "name": "desafio-ecs",
+                "name": "container-desafio-github-ecs",
                 "image": "${{ secrets.ECR_REPOSITORY_NAME }}:${{ github.sha }}",
                 "memory": 512,
                 "cpu": 256,
@@ -61,5 +61,5 @@ jobs:
           aws ecs update-service \
             --cluster ${{ secrets.ECS_CLUSTER_NAME }} \
             --service ${{ secrets.ECS_SERVICE_NAME }} \
-            --task-definition ${{ secrets.ECS_TASK_DEFINITION_ARN }} \
+            --task-definition ${{ secrets.ECS_TASK_DEFINITION_NAME}} \
             --force-new-deployment
