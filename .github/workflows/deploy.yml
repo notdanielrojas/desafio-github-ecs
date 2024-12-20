@@ -42,24 +42,10 @@ jobs:
         run: |
           docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY_NAME }}:${{ github.sha }}
 
-      - name: Register new ECS Task Definition
-        run: |
-          aws ecs register-task-definition \
-            --family task-desafio-github-ecs \
-            --container-definitions '[
-              {
-                "name": "container-desafio-github-ecs",
-                "image": "${{ secrets.ECR_REPOSITORY_NAME }}:${{ github.sha }}",
-                "memory": 512,
-                "cpu": 256,
-                "essential": true
-              }
-            ]'
-            
       - name: Update ECS service with new Task Definition
         run: |
           aws ecs update-service \
             --cluster ${{ secrets.ECS_CLUSTER_NAME }} \
             --service ${{ secrets.ECS_SERVICE_NAME }} \
-            --task-definition ${{ secrets.ECS_TASK_DEFINITION_ARN}} \
+            --task-definition ${{ secrets.ECS_TASK_DEFINITION_ARN }} \
             --force-new-deployment
