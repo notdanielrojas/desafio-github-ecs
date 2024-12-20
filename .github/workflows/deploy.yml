@@ -37,6 +37,7 @@ jobs:
       - name: Build Docker image
         run: |
           docker build -t ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY_NAME }}:${{ github.sha }} .
+      
       - name: Push Docker image to ECR
         run: |
           docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY_NAME }}:${{ github.sha }}
@@ -47,7 +48,7 @@ jobs:
             --family task-desafio-github-ecs \
             --container-definitions '[
               {
-                "name": "my-container",
+                "name": "desafio-ecs",
                 "image": "${{ secrets.ECR_REPOSITORY_NAME }}:${{ github.sha }}",
                 "memory": 512,
                 "cpu": 256,
