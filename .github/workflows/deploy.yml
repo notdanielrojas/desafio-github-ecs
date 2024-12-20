@@ -29,27 +29,22 @@ jobs:
           key: ${{ runner.os }}-buildx-latest
           restore-keys: |
             ${{ runner.os }}-buildx-
-              
       - name: Log in to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Build Docker image
         run: |
-          docker build -t ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY_NAME }}:${{ github.sha }} .
+          docker build -t ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY_NAME }}:latest .
       
       - name: Push Docker image to ECR
         run: |
-          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY_NAME }}:${{ github.sha }}
-      - name: Install ecs-deploy script
+          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY_NAME }}:latest
+      
+      - name: Update ECS service with new Task Definition
         run: |
-          curl https://raw.githubusercontent.com/silinternational/ecs-deploy/master/ecs-deploy | sudo tee /usr/bin/ecs-deploy
-          sudo chmod +x /usr/bin/ecs-deploy
-
-      - name: Deploy to ECS using ecs-deploy
-        run: |
-          ecs-deploy \
+          aws ecs update-service \
             --cluster ${{ secrets.ECS_CLUSTER_NAME }} \
-            --service-name ${{ secrets.ECS_SERVICE_NAME }} \
-            --image ${{ secrets.ECR_REPOSITORY_NAME }}:latest \
+            --service ${{ secrets.ECS_SERVICE_NAME }} \
+            --task-definition ${{ secrets.ECS_TASK_DEFINITION_ARN }} \
             --force-new-deployment
