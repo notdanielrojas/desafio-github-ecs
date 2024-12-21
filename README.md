@@ -15,8 +15,10 @@ Para que el flujo de trabajo de GitHub Actions pueda interactuar con tu cuenta d
 
 * **`AWS_ACCESS_KEY_ID`**: Tu clave de acceso de AWS.
 * **`AWS_SECRET_ACCESS_KEY`**: Tu clave secreta de AWS.
-* **`ECR_REPOSITORY`**: El nombre del repositorio ECR donde se almacenará la imagen Docker.
-* **`ECS_CLUSTER`**: El nombre del clúster ECS donde se desplegará la aplicación.
+* **`AWS_ACCOUNT_ID`**: Tu ID de cuenta de AWS.
+* **`AWS_REGION`**: La región de AWS donde se encuentra tu clúster ECS (por ejemplo, 'us-east-1').
+* **`ECR_REPOSITORY_NAME`**: El nombre del repositorio ECR donde se almacenará la imagen Docker.
+* **`ECS_CLUSTER_NAME`**: El nombre del clúster ECS donde se desplegará la aplicación.
 * **`ECS_SERVICE_NAME`**: El nombre del servicio ECS que se actualizará con la nueva imagen.
 * **`ECS_TASK_DEFINITION_ARN`**: El ARN de la definición de tarea de ECS.
 
@@ -28,21 +30,30 @@ Para que el flujo de trabajo de GitHub Actions pueda interactuar con tu cuenta d
 
 ## Flujo de Trabajo de GitHub Actions
 
-El archivo `.github/workflows/ecs.yml` define el flujo de trabajo de GitHub Actions que automatiza el proceso de construcción y despliegue. Este flujo de trabajo realiza las siguientes acciones:
+El archivo `.github/workflows/ecs.yml` define el flujo de trabajo de GitHub Actions que automatiza el proceso de construcción y despliegue. 
 
-1. **Inicio de sesión en ECR:** Se autentica en tu repositorio de ECR para poder subir la imagen Docker.
-2. **Construcción de la imagen:**  `docker build -t ${{ secrets.ECR_REPOSITORY }}:${{ github.sha }} .`  Esta línea construye una imagen Docker de tu aplicación y la etiqueta con el nombre del repositorio ECR y el hash del commit de GitHub.
-3. **Push a ECR:** `docker push ${{ secrets.ECR_REPOSITORY }}:${{ github.sha }}`  Esta línea sube la imagen Docker al repositorio ECR.
-4. **Despliegue en ECS:** Se utiliza `ecs-deploy` para actualizar el servicio ECS:
+**Pasos del flujo de trabajo:**
+
+1. **Checkout code:** Descarga el código fuente del repositorio.
+2. **Set up Node.js:** Instala la versión 22 de Node.js en el entorno de ejecución.
+3. **Install dependencies:** Instala las dependencias del proyecto utilizando `npm install`.
+4. **Configure AWS credentials:** Configura las credenciales de AWS utilizando los secretos definidos en el repositorio.
+5. **Set up Docker Buildx:**  Configura Docker Buildx para construir imágenes multiplataforma.
+6. **Cache Docker layers:** Almacena en caché las capas de Docker para acelerar las construcciones posteriores.
+7. **Log in to Amazon ECR:** Inicia sesión en el repositorio de ECR.
+8. **Construcción de la imagen:** `docker build -t ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY_NAME }}:${{ github.sha }} .`  Esta línea construye una imagen Docker de tu aplicación y la etiqueta con el ID de tu cuenta de AWS, la región, el nombre del repositorio ECR y el hash del commit de GitHub.
+9. **Push a ECR:** `docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY_NAME }}:${{ github.sha }}` Esta línea sube la imagen Docker al repositorio ECR.
+10. **Despliegue en ECS:** 
 
     ```
-    ecs-deploy \
-      --cluster ${{ secrets.ECS_CLUSTER }} \
-      --service-name ${{ secrets.ECS_SERVICE_NAME }} \
-      --image ${{ secrets.ECR_REPOSITORY }}:${{ github.sha }}
-    ``` 
+    aws ecs update-service \
+      --cluster ${{ secrets.ECS_CLUSTER_NAME }} \
+      --service ${{ secrets.ECS_SERVICE_NAME }} \
+      --task-definition ${{ secrets.ECS_TASK_DEFINITION_ARN }} \
+      --force-new-deployment
+    ```
 
-    Estos comandos actualizan el servicio ECS especificado para que utilice la nueva imagen Docker que se ha subido a ECR.
+    Estos comandos actualizan el servicio ECS especificado para que utilice la nueva imagen Docker que se ha subido a ECR. `--force-new-deployment` fuerza al servicio a iniciar nuevas tareas con la nueva definición de tarea, incluso si no hay cambios en la definición.
 
 ## Acceso al Servidor
 
@@ -53,19 +64,3 @@ Para acceder a él, necesitas la URL pública donde está accesible.
 * **Si configuraste un balanceador de carga:** La URL de acceso será la del balanceador. Puedes encontrarla en la consola de ECS, en la sección de tu servicio, o en la consola de EC2 si usaste un balanceador de carga clásico.
 * **Si no usas balanceador de carga:**  Puedes acceder a través de la IP pública de la instancia EC2 donde se ejecuta tu servicio.  Ten en cuenta que esto requiere que tu instancia EC2 tenga una IP pública y que el puerto de tu aplicación esté abierto en el grupo de seguridad.
 
-
-## Pasos con Docker
-
-Para que este flujo de trabajo funcione correctamente, necesitas tener un `Dockerfile` en la raíz de tu proyecto. Este archivo contiene las instrucciones para construir la imagen Docker de tu aplicación. 
-
-## Consideraciones Adicionales
-
-* **Variables de entorno:** Si tu aplicación necesita variables de entorno, configúralas en la definición de tarea de ECS.
-* **Escalabilidad:** ECS permite escalar tu aplicación automáticamente. Puedes configurar reglas de escalado automático en tu servicio ECS.
-* **Monitorización:** Utiliza CloudWatch para monitorizar las métricas de tu aplicación y recibir alertas si hay problemas.
-
-## Recuerda
-
-* Este es un ejemplo básico. Puedes personalizar el flujo de trabajo según tus necesidades.
-* Sigue las mejores prácticas de seguridad al configurar tus recursos de AWS y los secretos de GitHub Actions.
-* Revisa la documentación de las acciones de GitHub Actions para obtener más información.
