@@ -31,12 +31,41 @@ Para que el flujo de trabajo de GitHub Actions pueda interactuar con tu cuenta d
 El archivo `.github/workflows/ecs.yml` define el flujo de trabajo de GitHub Actions que automatiza el proceso de construcción y despliegue. Este flujo de trabajo realiza las siguientes acciones:
 
 1. **Inicio de sesión en ECR:** Se autentica en tu repositorio de ECR para poder subir la imagen Docker.
-2. **Construcción de la imagen:** Construye una imagen Docker de tu aplicación, etiquetándola con el hash del commit para su trazabilidad.
-3. **Push a ECR:** Sube la imagen Docker construida al repositorio de ECR.
-4. **Despliegue en ECS:** Actualiza el servicio ECS especificado para que utilice la nueva imagen Docker que se ha subido a ECR.
+2. **Construcción de la imagen:**  `docker build -t ${{ secrets.ECR_REPOSITORY }}:${{ github.sha }} .`  Esta línea construye una imagen Docker de tu aplicación y la etiqueta con el nombre del repositorio ECR y el hash del commit de GitHub.
+3. **Push a ECR:** `docker push ${{ secrets.ECR_REPOSITORY }}:${{ github.sha }}`  Esta línea sube la imagen Docker al repositorio ECR.
+4. **Despliegue en ECS:** Se utiliza `ecs-deploy` para actualizar el servicio ECS:
+
+    ```
+    ecs-deploy \
+      --cluster ${{ secrets.ECS_CLUSTER }} \
+      --service-name ${{ secrets.ECS_SERVICE_NAME }} \
+      --image ${{ secrets.ECR_REPOSITORY }}:${{ github.sha }}
+    ``` 
+
+    Estos comandos actualizan el servicio ECS especificado para que utilice la nueva imagen Docker que se ha subido a ECR.
 
 ## Acceso al Servidor
 
 Una vez que el flujo de trabajo de GitHub Actions se complete con éxito, tu servidor web estará desplegado y disponible. 
 
 Para acceder a él, necesitas la URL pública donde está accesible. 
+
+* **Si configuraste un balanceador de carga:** La URL de acceso será la del balanceador. Puedes encontrarla en la consola de ECS, en la sección de tu servicio, o en la consola de EC2 si usaste un balanceador de carga clásico.
+* **Si no usas balanceador de carga:**  Puedes acceder a través de la IP pública de la instancia EC2 donde se ejecuta tu servicio.  Ten en cuenta que esto requiere que tu instancia EC2 tenga una IP pública y que el puerto de tu aplicación esté abierto en el grupo de seguridad.
+
+
+## Pasos con Docker
+
+Para que este flujo de trabajo funcione correctamente, necesitas tener un `Dockerfile` en la raíz de tu proyecto. Este archivo contiene las instrucciones para construir la imagen Docker de tu aplicación. 
+
+## Consideraciones Adicionales
+
+* **Variables de entorno:** Si tu aplicación necesita variables de entorno, configúralas en la definición de tarea de ECS.
+* **Escalabilidad:** ECS permite escalar tu aplicación automáticamente. Puedes configurar reglas de escalado automático en tu servicio ECS.
+* **Monitorización:** Utiliza CloudWatch para monitorizar las métricas de tu aplicación y recibir alertas si hay problemas.
+
+## Recuerda
+
+* Este es un ejemplo básico. Puedes personalizar el flujo de trabajo según tus necesidades.
+* Sigue las mejores prácticas de seguridad al configurar tus recursos de AWS y los secretos de GitHub Actions.
+* Revisa la documentación de las acciones de GitHub Actions para obtener más información.
